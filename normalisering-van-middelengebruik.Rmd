@@ -13,7 +13,7 @@ require('ggplot2');
 require('tidyr');
 ```
 
-Export van https://opendata.cbs.nl/statline/#/CBS/nl/dataset/83021NED/table?dl=13DDD ("CSV zonder statistische symbolen")
+Export van https://opendata.cbs.nl/statline/#/CBS/nl/dataset/83021NED/table?dl=13DDD ("CSV zonder statistische symbolen").
 
 ```{r}
 dat <- read.csv(here::here("Leefstijl__persoonskenmerken_02112018_150819.csv"),
