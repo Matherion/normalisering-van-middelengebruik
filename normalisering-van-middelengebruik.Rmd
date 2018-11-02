@@ -1,0 +1,145 @@
+---
+title: "Normalisering van middelengebruik in Nederland"
+author: "Gjalt-Jorn Peters"
+date: "`r format(Sys.time(), '%H:%M:%S on %Y-%m-%d %Z (GMT%z)')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE);
+require('here');
+require('userfriendlyscience');
+require('ggplot2');
+require('tidyr');
+```
+
+Export van https://opendata.cbs.nl/statline/#/CBS/nl/dataset/83021NED/table?dl=13DDD ("CSV zonder statistische symbolen")
+
+```{r}
+dat <- read.csv(here::here("Leefstijl__persoonskenmerken_02112018_150819.csv"),
+                sep=";",
+                dec=",",
+                encoding="UTF-8");
+
+indices.pointEstimates <-
+  seq(from=1, to=nrow(dat), by=3);
+indices.lowerBounds <-
+  indices.pointEstimates + 1;
+indices.upperBounds <-
+  indices.pointEstimates + 2;
+
+years <- unique(dat[, 3]);
+
+halfwayDat <-
+  dat[, c(2, 3, 4, 6, 16, 22, 25, 28)];
+
+names(halfwayDat) <-
+  c('estimate',
+    'year',
+    'Tabak',
+    'Alcohol',
+    'Cannabis',
+    'Speed',
+    'Ecstasy',
+    'Cocaïne');
+
+halfwayDat$estimate <- rep(c("pe", "lb", "ub"),
+                           each=nrow(dat)/3);
+
+longDat <-
+  tidyr::gather(data = halfwayDat,
+                key = 'substance',
+                value = 'value',
+                Tabak:Cocaïne);
+
+longDat <-
+  tidyr::spread(longDat,
+                key = 'estimate',
+                value = 'value');
+
+longDat <- data.frame(substance = rep(names(halfwayDat)[3:8],
+                                      each=nrow(dat) / 3),
+                      year = halfwayDat$year,
+                      lb = unlist(halfwayDat[indices.lowerBounds, 3:8]),
+                      pe = unlist(halfwayDat[indices.pointEstimates, 3:8]),
+                      ub = unlist(halfwayDat[indices.upperBounds, 3:8]));
+
+fullPlot <-
+  ggplot2::ggplot(data = longDat,
+                  mapping = aes_string(x = 'year',
+                                       color = 'substance',
+                                       group = 'substance',
+                                       fill = 'substance')) +
+  ggplot2::geom_ribbon(mapping = aes_string(ymin = 'lb',
+                                            ymax = 'ub',
+                                            color=NA),
+                       na.rm=TRUE) +
+  ggplot2::geom_line(mapping = aes_string(y = 'pe'),
+                     linetype="dashed",
+                     na.rm=TRUE) +
+  ggplot2::scale_fill_viridis_d(end = .8,
+                                alpha=.25,
+                                name="Middel") +
+  ggplot2::scale_color_viridis_d(end = .8,
+                                 name="Middel") +
+  ggplot2::theme_minimal(base_size=26) +
+  ggplot2::theme(panel.background = element_rect(fill = "transparent",
+                                                 color = "transparent"),
+                 plot.background = element_rect(fill = "transparent",
+                                                 color = "transparent"),
+                 legend.background = element_rect(fill = "transparent",
+                                                 color = "transparent"),
+                 legend.box.background = element_rect(fill = "transparent",
+                                                 color = "transparent")) +
+  ggplot2::coord_cartesian(ylim = c(0, 100)) +
+  ggplot2::labs(title = "Laatste jaar prevalenties",
+                caption = "Bron: Statline, CBS",
+                x = "Jaar",
+                y = "Prevalentie");
+
+ggplot2::ggsave(filename = here::here("fullplot.png"),
+                plot = fullPlot,
+                width = 16,
+                height = 9,
+                units = 'in',
+                dpi = 300,
+                type = "cairo-png",
+                bg = "transparent");
+
+ggplot2::ggsave(filename = here::here("fullplot.svg"),
+                plot = fullPlot,
+                width = 16,
+                height = 9,
+                units = 'in',
+                dpi = 300,
+                bg = "transparent");
+
+fullPlot;
+
+lowerTenPercent <- 
+  fullPlot +
+    ggplot2::coord_cartesian(xlim = c(2015, 2017),
+                             ylim=c(0, 10)) +
+    ggplot2::scale_x_continuous(breaks=c(2015, 2016, 2017)) +
+    ggplot2::labs(subtitle = "Alleen middelen die weinig worden gebruikt");
+
+ggplot2::ggsave(filename = here::here("lowerTenPercent.png"),
+                plot = lowerTenPercent,
+                width = 16,
+                height = 9,
+                units = 'in',
+                dpi = 300,
+                type = "cairo-png",
+                bg = "transparent");
+
+ggplot2::ggsave(filename = here::here("lowerTenPercent.svg"),
+                plot = lowerTenPercent,
+                width = 16,
+                height = 9,
+                units = 'in',
+                dpi = 300,
+                bg = "transparent");
+
+lowerTenPercent;
+
+```
